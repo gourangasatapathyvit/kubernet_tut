@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deployment
+  labels:
+    app: mongo
+spec:
+  replicas: 1 #statefulset as its DB
+  selector:
+    matchLabels:
+      app: mongo
+  template: # POD configuration
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodbimg
+          image: mongo:5.0
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret # name of mongo-secret yaml file
+                  key: mongo-user
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret # name of mongo-secret yaml file
+                  key: mongo-password
+          resources:
+            limits:
+              cpu: "0.5" # specify the CPU limit (in cores)
+              memory: "256Mi" # specify the memory limit (in megabytes)
+            requests:
+              cpu: "0.2" # specify the CPU request (in cores)
+              memory: "128Mi" # specify the memory request (in megabytes)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+spec:
+  selector:
+    app: mongo # match labels of POD
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017 # match with containerPort
